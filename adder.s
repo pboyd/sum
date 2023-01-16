@@ -48,13 +48,25 @@ digit
 	jmp next
 
 nonDigit
+	phx		; save X
 	lda curr	; get lsb of the current number
+	ldx curr+1	; get msb of the current number
+	bne notZero	; if msb is not zero
+	cmp #0		; if lsb is not zero
+	bne notZero
+
+	plx		; current is zero, pop x
+	bra next	; go to the next number
+
+notZero
 	clc		; clear carry before add
 	adc total	; add lsb of current to the total
 	sta total	; store lsb of the current total
-	lda curr+1	; get msb of the current number
-	adc total+1	; add msb of current to the toal
+	txa		; copy msb from X to A
+	adc total+1	; add msb of current to the total
 	sta total+1	; store msb of the current total
+
+	plx		; restore X
 
 	lda #0		; clear current
 	sta curr

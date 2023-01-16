@@ -12,20 +12,10 @@ lshiftStack16	mac
 		txa		; copy lsb from X to A
 		asl A		; left shift lsb
 		tax		; copy lsb back to X
-		bcs withCarry	; branch for carry
-
 		tya		; copy msb from Y to A
-		asl A		; left shift msb
-		tay		; copy msb back to Y
-		jmp cleanup	; done
+		rol A		; rotate A with the carry
+		tay		; copy A back to msb
 
-withCarry
-		tya		; copy msb from Y to A
-		asl A		; left shift msb
-		tay		; copy msb back to Y
-		iny		; increase Y by 1 for the carry
-
-cleanup
 		pla		; restore original accumulator
 		phy		; push msb back on the stack
 		phx		; push lsb back on the stack
@@ -80,11 +70,10 @@ loop
 	addStack16 ]1	; the bit was 1, so increase the product
 
 dontAdd
-	cmp #0		; if A is 0...
-	beq end		; we're done
+	beq end		; check if A is zero after shift
 
 	lshiftStack16	; shift for the next pass ("add a placeholder")
-	jmp loop	; do it again
+	bra loop	; do it again
 
 end
 	; remove our temp values from the stack
