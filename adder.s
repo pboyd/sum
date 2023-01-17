@@ -27,17 +27,7 @@ loop
 	bcs nonDigit	; if A > 9
 
 digit
-
-	phx		; push the page counter
-	phy		; push the page index
-	pha		; push the digit
-
-	lda #10		; set multiplier
-	mul168 curr	; multiply by 10
-
-	pla		; pop the digit
-	ply		; pop the page index
-	plx		; pop the page counter
+	mul10 curr	; multiply by 10
 
 	clc		; clear carry before add
 	adc curr	; add digit to lsb

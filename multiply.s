@@ -1,102 +1,63 @@
-; lshiftStack16
+; mul10 <addr>
 ;
-; Pops two bytes from the stack shifts them to left one time and then pushes
-; the result back. The least significant byte should be the first value popped.
+; mul10 multiplies the 16-bit number at addr by 10, wrapping around if it
+; overflows. The result is overwrites addr.
 ;
-; Clobbers X and Y, but preserves A.
-lshiftStack16	mac
-		plx		; get lsb
-		ply		; get msb
-		pha		; save accumulator
-
-		txa		; copy lsb from X to A
-		asl A		; left shift lsb
-		tax		; copy lsb back to X
-		tya		; copy msb from Y to A
-		rol A		; rotate A with the carry
-		tay		; copy A back to msb
-
-		pla		; restore original accumulator
-		phy		; push msb back on the stack
-		phx		; push lsb back on the stack
-		<<<
-
-; addStack16 addr
+; This macro works on the premise that 2x + 8x = 10x
 ;
-; addStack16 pops two bytes from the stack and adds them to the value at addr.
-; The least significant byte should be the first value popped. The values are
-; placed back on the stack.
-;
-; Clobbers X and Y, but preserves A.
-addStack16	mac
-		plx		; get lsb
-		ply		; get msb
-		pha		; save accumulator
+; Preserves A, X and Y
+mul10	mac
+	; Save old register state
+	pha
+	phx
+	phy
 
-		txa		; copy lsb from X to A
-		clc		; clear carry before add
-		adc ]1		; add lsb
-		sta ]1		; store lsb
-		tya		; copy msb from Y to A
-		adc ]1+1	; add msb and carry flag
-		sta ]1+1	; store msb
+	ldx ]1		; Copy lsb to X
+	ldy ]1+1	; Copy msb to Y
 
-		pla		; restore original accumulator
-		phy		; push msb back on the stack
-		phx		; push lsb back on the stack
-		<<<
+	; Multiply by 2, and store the result
+	txa		; Copy lsb to A
+	asl A		; Multiply lsb by 2
+	sta ]1		; Store lsb
+	tya		; Copy msb to A
+	rol A		; Multiply msb by 2
+	sta ]1+1	; Store msb
 
-; mul168 addr
-;
-; Multiplies a 16-bit number stored at the address by the accumulator and
-; stores the result back at the same address.
-;
-; Clobbers A, X and Y.
-mul168	mac
-	ldx ]1+1	; load msb
-	phx		; push msb to the stack
-	ldx ]1		; load lsb
-	phx		; push lsb to the stack
+	; Multiply by 2, keep the result in X and Y
+	txa		; Copy lsb to A
+	asl A		; Multiply lsb by 2
+	tax		; Put lsb back in X
+	tya		; Copy msb to A
+	rol A		; Multiply msb by 2
+	tay		; Put msb back in Y
 
-	; clear our product
-	ldx #0
-	stx ]1
-	stx ]1+1
+	; Repeat for 4 times
+	txa		; Copy lsb to A
+	asl A		; Multiply lsb by 2
+	tax		; Put lsb back in X
+	tya		; Copy msb to A
+	rol A		; Multiply msb by 2
+	tay		; Put msb back in Y
 
-loop
-	lsr A		; remove the least significant bit
-	bcc dontAdd	; if the bit was 0 don't add
+	; Repeat for 8 times
+	txa		; Copy lsb to A
+	asl A		; Multiply lsb by 2
+	tax		; Put lsb back in X
+	tya		; Copy msb to A
+	rol A		; Multiply msb by 2
+	tay		; Put msb back in Y
 
-	addStack16 ]1	; the bit was 1, so increase the product
+	; Add the result
+	txa		; Copy lsb to A
+	clc		; Clear carry before add
+	adc ]1		; Add 2x + 8x in lsb
+	sta ]1		; Store lsb
+	tya		; Copy msb to A
+	adc ]1+1	; Add 2x + 8x in msb
+	sta ]1+1	; Store msb
 
-dontAdd
-	beq end		; check if A is zero after shift
-
-	lshiftStack16	; shift for the next pass ("add a placeholder")
-	bra loop	; do it again
-
-end
-	; remove our temp values from the stack
-	pla
+	; Restore old register state
+	ply
+	plx
 	pla
 	<<<
-
-#return	ds 2		; mul stashes it's return address here
-#
-#mul
-#	plx		; pop first byte of the return address
-#	stx return	; store first byte
-#	plx		; pop second byte
-#	stx return+1	; store second byte
-#
-#	plx		; pop lsb
-#	stx scratch+2	; store lsb
-#	plx		; pop msb
-#	stx scratch+3	; store lsb
-#
-#	ldx return+1	; get second byte of the return address
-#	phx		; put it back on the stack
-#	ldx return	; get first byte
-#	phx		; put it back on the stack
-#
-#	rts
