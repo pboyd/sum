@@ -7,7 +7,7 @@ adder.dsk: adder
 	cp contrib/Apple_DOS_v3.3_1980_Apple.do $@ && \
 	$(APPLECOMMANDER) -p $@ $< bin 0x800 < $<
 
-adder: adder.s multiply.s
+adder: adder.s
 	$(MERLIN) $(MERLINFLAGS) adder.s
 
 .PHONY:
