@@ -41,7 +41,7 @@ digit
 	lda #0		; clear A to add carry
 	adc curr+1	; add carry to msb
 	sta curr+1	; store msb
-	jmp next
+	bra next
 
 nonDigit
 	phx		; save X
@@ -70,16 +70,14 @@ notZero
 
 next
 	iny		; go to the next character
-	bne jumpLoop	; if we did not overflow
+	bne loop	; if we did not overflow
 
 nextPage
 	dex		; end of a page, decrecrment X
 	beq end		; if X is zero then we are done
 
 	inc page+1	; increment msb of the page counter
-
-jumpLoop
-	jmp loop
+	bra loop	; do it again
 
 end
 	lda curr	; get lsb of the current number
